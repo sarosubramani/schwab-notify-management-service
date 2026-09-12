@@ -7,6 +7,7 @@ import com.schwab.nms.model.NotificationRequest;
 import com.schwab.nms.model.NotificationResponse;
 import com.schwab.nms.model.NotificationStatusResponse;
 import com.schwab.nms.model.StoredNotification;
+import com.schwab.nms.repository.NotificationRepository;
 import com.schwab.nms.service.NotificationRoutingPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +84,87 @@ public final class NotificationServiceUtils {
             LOGGER.error("Error in addAttempt", e);
             throw e;
         }
+    }
+
+    public static StoredNotification loadNotification(Map<String, StoredNotification> notifications, NotificationRepository notificationRepository, String id) {
+        if (notificationRepository != null) {
+            return notificationRepository.findById(id).orElse(null);
+        }
+        return notifications.get(id);
+    }
+
+    public static List<StoredNotification> loadAllNotifications(Map<String, StoredNotification> notifications, NotificationRepository notificationRepository) {
+        if (notificationRepository != null) {
+            return notificationRepository.findAll();
+        }
+        return notifications.values().stream().toList();
+    }
+
+    public static void saveNotification(Map<String, StoredNotification> notifications, NotificationRepository notificationRepository, StoredNotification notification) {
+        if (notificationRepository != null) {
+            if (notificationRepository.findById(notification.id()).isPresent()) {
+                notificationRepository.update(notification);
+            } else {
+                notificationRepository.save(notification);
+            }
+            return;
+        }
+        notifications.put(notification.id(), notification);
+    }
+
+    public static void updateStoredStatus(Map<String, StoredNotification> notifications, NotificationRepository notificationRepository, String id, String status) {
+        StoredNotification notification = loadNotification(notifications, notificationRepository, id);
+        if (notification == null) {
+            return;
+        }
+
+        StoredNotification updated = new StoredNotification(
+                notification.id(),
+                notification.sourceSystem(),
+                notification.correlationId(),
+                notification.notificationType(),
+                notification.severity(),
+                notification.priority(),
+                notification.recipients(),
+                notification.channels(),
+                notification.createdAt(),
+                notification.scheduledAt(),
+                notification.expiresAt(),
+                notification.title(),
+                notification.message(),
+                status,
+                notification.deliveryAttempts(),
+                notification.receivedAt());
+        saveNotification(notifications, notificationRepository, updated);
+    }
+
+    public static void addStoredAttempt(Map<String, StoredNotification> notifications, NotificationRepository notificationRepository, String id, DeliveryAttemptResponse attempt) {
+        StoredNotification notification = loadNotification(notifications, notificationRepository, id);
+        if (notification == null) {
+            return;
+        }
+
+        List<DeliveryAttemptResponse> attempts = new ArrayList<>(notification.deliveryAttempts());
+        attempts.add(attempt);
+
+        StoredNotification updated = new StoredNotification(
+                notification.id(),
+                notification.sourceSystem(),
+                notification.correlationId(),
+                notification.notificationType(),
+                notification.severity(),
+                notification.priority(),
+                notification.recipients(),
+                notification.channels(),
+                notification.createdAt(),
+                notification.scheduledAt(),
+                notification.expiresAt(),
+                notification.title(),
+                notification.message(),
+                notification.status(),
+                attempts,
+                notification.receivedAt());
+        saveNotification(notifications, notificationRepository, updated);
     }
 
     public static String resolveProvider(String channel) {
