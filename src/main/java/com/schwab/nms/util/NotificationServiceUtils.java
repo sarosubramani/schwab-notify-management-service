@@ -24,7 +24,7 @@ public final class NotificationServiceUtils {
     private NotificationServiceUtils() {}
 
     public static void updateStatus(Map<String, StoredNotification> notifications, String id, String status) {
-        LOGGER.info("Enter: updateStatus");
+        LOGGER.debug("Enter: updateStatus");
         try {
             StoredNotification notification = notifications.get(id);
             if (notification != null) {
@@ -46,7 +46,7 @@ public final class NotificationServiceUtils {
                         notification.deliveryAttempts(),
                         notification.receivedAt()));
             }
-            LOGGER.info("Exit: updateStatus");
+            LOGGER.debug("Exit: updateStatus");
         } catch (Exception e) {
             LOGGER.error("Error in updateStatus", e);
             throw e;
@@ -54,7 +54,7 @@ public final class NotificationServiceUtils {
     }
 
     public static void addAttempt(Map<String, StoredNotification> notifications, String id, DeliveryAttemptResponse attempt) {
-        LOGGER.info("Enter: addAttempt");
+        LOGGER.debug("Enter: addAttempt");
         try {
             StoredNotification notification = notifications.get(id);
             if (notification != null) {
@@ -78,7 +78,7 @@ public final class NotificationServiceUtils {
                         attempts,
                         notification.receivedAt()));
             }
-            LOGGER.info("Exit: addAttempt");
+            LOGGER.debug("Exit: addAttempt");
         } catch (Exception e) {
             LOGGER.error("Error in addAttempt", e);
             throw e;
@@ -86,7 +86,7 @@ public final class NotificationServiceUtils {
     }
 
     public static String resolveProvider(String channel) {
-        LOGGER.info("Enter: resolveProvider");
+        LOGGER.debug("Enter: resolveProvider");
         try {
             String provider = switch (NotificationChannel.fromValue(channel)) {
                 case EMAIL -> NmsConstants.Providers.SMTP;
@@ -96,7 +96,7 @@ public final class NotificationServiceUtils {
                 case SLACK -> NmsConstants.Providers.SLACK_WEBHOOK;
                 case TEAMS -> NmsConstants.Providers.TEAMS_WEBHOOK;
             };
-            LOGGER.info("Exit: resolveProvider");
+            LOGGER.debug("Exit: resolveProvider");
             return provider;
         } catch (Exception e) {
             LOGGER.error("Error in resolveProvider", e);
@@ -105,7 +105,7 @@ public final class NotificationServiceUtils {
     }
 
     public static void ensureNotDuplicate(NotificationRequest request, Map<String, StoredNotification> notifications, NotificationRoutingPolicy routingPolicy) {
-        LOGGER.info("Enter: ensureNotDuplicate");
+        LOGGER.debug("Enter: ensureNotDuplicate");
         try {
             String fingerprint = buildFingerprint(request, routingPolicy);
             for (StoredNotification existing : notifications.values()) {
@@ -113,7 +113,7 @@ public final class NotificationServiceUtils {
                     throw new IllegalArgumentException(NmsConstants.Messages.ERR_DUPLICATE);
                 }
             }
-            LOGGER.info("Exit: ensureNotDuplicate");
+            LOGGER.debug("Exit: ensureNotDuplicate");
         } catch (Exception e) {
             LOGGER.error("Error in ensureNotDuplicate", e);
             throw e;
@@ -121,7 +121,7 @@ public final class NotificationServiceUtils {
     }
 
     public static NotificationResponse toResponse(StoredNotification notification) {
-        LOGGER.info("Enter: toResponse");
+        LOGGER.debug("Enter: toResponse");
         try {
             NotificationResponse result = new NotificationResponse(
                     notification.id(),
@@ -140,7 +140,7 @@ public final class NotificationServiceUtils {
                     notification.message(),
                     notification.status(),
                     notification.deliveryAttempts());
-            LOGGER.info("Exit: toResponse");
+            LOGGER.debug("Exit: toResponse");
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in toResponse", e);
@@ -149,7 +149,7 @@ public final class NotificationServiceUtils {
     }
 
     public static NotificationStatusResponse toStatusResponse(StoredNotification notification) {
-        LOGGER.info("Enter: toStatusResponse");
+        LOGGER.debug("Enter: toStatusResponse");
         try {
             List<NotificationStatusResponse.RecipientDeliveryStatus> recipientStatus = notification.recipients().stream()
                     .map(recipient -> new NotificationStatusResponse.RecipientDeliveryStatus(
@@ -168,7 +168,7 @@ public final class NotificationServiceUtils {
                     notification.scheduledAt(),
                     notification.expiresAt(),
                     notification.receivedAt());
-            LOGGER.info("Exit: toStatusResponse");
+            LOGGER.debug("Exit: toStatusResponse");
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in toStatusResponse", e);

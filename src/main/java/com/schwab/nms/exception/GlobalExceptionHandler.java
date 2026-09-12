@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
-        LOGGER.info("Enter: handleResourceNotFound");
+        LOGGER.debug("Enter: handleResourceNotFound");
         try {
             ApiError apiError = new ApiError(
                     LocalDateTime.now(),
@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
                     HttpStatus.NOT_FOUND.getReasonPhrase(),
                     ex.getMessage(),
                     request.getRequestURI());
-            LOGGER.info("Exit: handleResourceNotFound");
+            LOGGER.debug("Exit: handleResourceNotFound");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiError);
         } catch (Exception e) {
             LOGGER.error("Error in handleResourceNotFound", e);
@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        LOGGER.info("Enter: handleValidationException");
+        LOGGER.debug("Enter: handleValidationException");
         try {
             Map<String, String> validationErrors = new HashMap<>();
             for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
                     HttpStatus.BAD_REQUEST.getReasonPhrase(),
                     validationErrors.toString(),
                     request.getRequestURI());
-            LOGGER.info("Exit: handleValidationException");
+            LOGGER.debug("Exit: handleValidationException");
             return ResponseEntity.badRequest().body(apiError);
         } catch (Exception e) {
             LOGGER.error("Error in handleValidationException", e);
@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgumentException(IllegalArgumentException ex, HttpServletRequest request) {
-        LOGGER.info("Enter: handleIllegalArgumentException");
+        LOGGER.debug("Enter: handleIllegalArgumentException");
         try {
             ApiError apiError = new ApiError(
                     LocalDateTime.now(),
@@ -70,7 +70,7 @@ public class GlobalExceptionHandler {
                     HttpStatus.BAD_REQUEST.getReasonPhrase(),
                     ex.getMessage(),
                     request.getRequestURI());
-            LOGGER.info("Exit: handleIllegalArgumentException");
+            LOGGER.debug("Exit: handleIllegalArgumentException");
             return ResponseEntity.badRequest().body(apiError);
         } catch (Exception e) {
             LOGGER.error("Error in handleIllegalArgumentException", e);
@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneralException(Exception ex, HttpServletRequest request) {
-        LOGGER.info("Enter: handleGeneralException");
+        LOGGER.debug("Enter: handleGeneralException");
         try {
             ApiError apiError = new ApiError(
                     LocalDateTime.now(),
@@ -88,7 +88,7 @@ public class GlobalExceptionHandler {
                     HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                     ex.getMessage(),
                     request.getRequestURI());
-            LOGGER.info("Exit: handleGeneralException");
+            LOGGER.debug("Exit: handleGeneralException");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiError);
         } catch (Exception e) {
             LOGGER.error("Error in handleGeneralException", e);

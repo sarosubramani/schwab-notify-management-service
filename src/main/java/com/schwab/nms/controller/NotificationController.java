@@ -35,7 +35,7 @@ public class NotificationController {
         LOGGER.info("Enter: NotificationController constructor");
         try {
             this.notificationHandler = notificationHandler;
-            LOGGER.info("Exit: NotificationController constructor");
+            LOGGER.debug("Exit: NotificationController constructor");
         } catch (Exception e) {
             LOGGER.error("Error in NotificationController constructor", e);
             throw e;
@@ -74,10 +74,10 @@ public class NotificationController {
     })
     @GetMapping("/getnotifications")
     public ResponseEntity<List<NotificationResponse>> getNotifications() {
-        LOGGER.info("Enter: getNotifications (controller)");
+        LOGGER.debug("Enter: getNotifications (controller)");
         try {
             List<NotificationResponse> result = notificationHandler.getNotifications();
-            LOGGER.info("Exit: getNotifications (controller)");
+            LOGGER.debug("Exit: getNotifications (controller)");
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             LOGGER.error("Error in getNotifications (controller)", e);
@@ -96,10 +96,10 @@ public class NotificationController {
     })
     @GetMapping("/notifications/{id}")
     public ResponseEntity<NotificationResponse> getNotificationById(@PathVariable String id) {
-        LOGGER.info("Enter: getNotificationById (controller)");
+        LOGGER.debug("Enter: getNotificationById (controller)");
         try {
             NotificationResponse result = notificationHandler.getNotificationById(id);
-            LOGGER.info("Exit: getNotificationById (controller)");
+            LOGGER.debug("Exit: getNotificationById (controller)");
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             LOGGER.error("Error in getNotificationById (controller)", e);
@@ -118,10 +118,10 @@ public class NotificationController {
     })
     @GetMapping("/notifications/{id}/status")
     public ResponseEntity<NotificationStatusResponse> getNotificationStatus(@PathVariable String id) {
-        LOGGER.info("Enter: getNotificationStatus (controller)");
+        LOGGER.debug("Enter: getNotificationStatus (controller)");
         try {
             NotificationStatusResponse result = notificationHandler.getNotificationStatus(id);
-            LOGGER.info("Exit: getNotificationStatus (controller)");
+            LOGGER.debug("Exit: getNotificationStatus (controller)");
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             LOGGER.error("Error in getNotificationStatus (controller)", e);

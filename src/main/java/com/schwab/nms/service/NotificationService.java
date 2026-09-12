@@ -1,25 +1,25 @@
 package com.schwab.nms.service;
 
-import com.schwab.nms.model.DeliveryAttemptResponse;
-import com.schwab.nms.model.NotificationRequest;
-import com.schwab.nms.model.NotificationResponse;
-import com.schwab.nms.model.NotificationStatusResponse;
 import com.schwab.nms.constants.NmsConstants;
-import com.schwab.nms.model.StoredNotification;
 import com.schwab.nms.enums.NotificationPriority;
 import com.schwab.nms.enums.NotificationSeverity;
 import com.schwab.nms.enums.NotificationStatus;
 import com.schwab.nms.enums.NotificationType;
 import com.schwab.nms.exception.ResourceNotFoundException;
+import com.schwab.nms.model.DeliveryAttemptResponse;
+import com.schwab.nms.model.NotificationRequest;
+import com.schwab.nms.model.NotificationResponse;
+import com.schwab.nms.model.NotificationStatusResponse;
+import com.schwab.nms.model.StoredNotification;
+import com.schwab.nms.repository.NotificationRepository;
 import com.schwab.nms.util.NotificationServiceUtils;
 import com.schwab.nms.validator.RequestValidator;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -39,13 +39,18 @@ public class NotificationService {
 
     private final Map<String, StoredNotification> notifications = new ConcurrentHashMap<>();
     private final NotificationRoutingPolicy routingPolicy;
-
     private final RequestValidator requestValidator;
+    private final NotificationRepository notificationRepository;
+
+    public NotificationService(NotificationRoutingPolicy routingPolicy) {
+        this(routingPolicy, null);
+    }
 
     @Autowired
-    public NotificationService(NotificationRoutingPolicy routingPolicy) {
-            this.routingPolicy = routingPolicy;
-            this.requestValidator = new RequestValidator();
+    public NotificationService(NotificationRoutingPolicy routingPolicy, NotificationRepository notificationRepository) {
+        this.routingPolicy = routingPolicy;
+        this.requestValidator = new RequestValidator();
+        this.notificationRepository = notificationRepository;
     }
 
     public NotificationResponse createNotification(NotificationRequest request) {
@@ -57,6 +62,10 @@ public class NotificationService {
 
             requestValidator.createNotifyValidateRequest(request);
             NotificationServiceUtils.ensureNotDuplicate(request, notifications, routingPolicy);
+            if (notificationRepository != null && notificationRepository.findAll().stream()
+                    .anyMatch(existing -> com.schwab.nms.util.NmsUtils.buildFingerprint(existing).equals(com.schwab.nms.util.NmsUtils.buildFingerprint(request, routingPolicy)))) {
+                throw new IllegalArgumentException(NmsConstants.Messages.ERR_DUPLICATE);
+            }
 
             List<String> channels = routingPolicy.resolveChannels(normalizeList(request.channels()), request.priority());
             List<String> recipients = normalizeList(request.recipients());
@@ -83,7 +92,7 @@ public class NotificationService {
                     new ArrayList<>(),
                     LocalDateTime.now());
 
-            notifications.put(id, notification);
+            saveNotification(notification);
             processNotificationAsync(id);
             LOGGER.info("Exit: createNotification");
             return NotificationServiceUtils.toResponse(notification);
@@ -100,8 +109,8 @@ public class NotificationService {
                 throw new ResourceNotFoundException("Notification", "id", id);
             }
 
-            StoredNotification notification = notifications.get(id);
-            if (null == notification) {
+            StoredNotification notification = loadNotification(id);
+            if (notification == null) {
                 throw new ResourceNotFoundException("Notification", "id", id);
             }
 
@@ -120,8 +129,8 @@ public class NotificationService {
                 throw new ResourceNotFoundException("Notification", "id", id);
             }
 
-            StoredNotification notification = notifications.get(id);
-            if (null == notification) {
+            StoredNotification notification = loadNotification(id);
+            if (notification == null) {
                 throw new ResourceNotFoundException("Notification", "id", id);
             }
 
@@ -136,7 +145,7 @@ public class NotificationService {
     public List<NotificationResponse> getNotifications() {
         LOGGER.info("Enter: getNotifications");
         try {
-            List<NotificationResponse> result = notifications.values().stream()
+            List<NotificationResponse> result = loadAllNotifications().stream()
                     .sorted(Comparator.comparing(StoredNotification::createdAt).reversed())
                     .map(NotificationServiceUtils::toResponse)
                     .toList();
@@ -152,13 +161,13 @@ public class NotificationService {
     public CompletableFuture<Void> processNotificationAsync(String id) {
         LOGGER.info("Enter: processNotificationAsync");
         try {
-            StoredNotification notification = notifications.get(id);
+            StoredNotification notification = loadNotification(id);
             if (notification == null) {
                 LOGGER.info("Exit: processNotificationAsync as null");
                 return CompletableFuture.completedFuture(null);
             }
 
-            NotificationServiceUtils.updateStatus(notifications, id, NotificationStatus.PROCESSING.name());
+            updateStoredStatus(id, NotificationStatus.PROCESSING.name());
 
             boolean hasSuccessfulDelivery = false;
             boolean hasFailure = false;
@@ -174,24 +183,24 @@ public class NotificationService {
                             provider,
                             NmsConstants.Messages.ATTEMPT_DELIVERED);
 
-                    NotificationServiceUtils.addAttempt(notifications, id, attempt);
+                    addStoredAttempt(id, attempt);
                     hasSuccessfulDelivery = true;
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    NotificationServiceUtils.addAttempt(notifications, id, new DeliveryAttemptResponse(channel, notification.deliveryAttempts().size() + 1, NotificationStatus.FAILED.name(), NotificationServiceUtils.resolveProvider(channel), NmsConstants.Messages.ATTEMPT_INTERRUPTED));
+                    addStoredAttempt(id, new DeliveryAttemptResponse(channel, notification.deliveryAttempts().size() + 1, NotificationStatus.FAILED.name(), NotificationServiceUtils.resolveProvider(channel), NmsConstants.Messages.ATTEMPT_INTERRUPTED));
                     hasFailure = true;
                 } catch (Exception e) {
-                    NotificationServiceUtils.addAttempt(notifications, id, new DeliveryAttemptResponse(channel, notification.deliveryAttempts().size() + 1, NotificationStatus.FAILED.name(), NotificationServiceUtils.resolveProvider(channel), e.getMessage()));
+                    addStoredAttempt(id, new DeliveryAttemptResponse(channel, notification.deliveryAttempts().size() + 1, NotificationStatus.FAILED.name(), NotificationServiceUtils.resolveProvider(channel), e.getMessage()));
                     hasFailure = true;
                 }
             }
 
             if (hasFailure && !hasSuccessfulDelivery) {
-                NotificationServiceUtils.updateStatus(notifications, id, NotificationStatus.FAILED.name());
+                updateStoredStatus(id, NotificationStatus.FAILED.name());
             } else if (hasFailure) {
-                NotificationServiceUtils.updateStatus(notifications, id, NotificationStatus.PARTIALLY_FAILED.name());
+                updateStoredStatus(id, NotificationStatus.PARTIALLY_FAILED.name());
             } else {
-                NotificationServiceUtils.updateStatus(notifications, id, NotificationStatus.SENT.name());
+                updateStoredStatus(id, NotificationStatus.SENT.name());
             }
 
             LOGGER.info("Exit: processNotificationAsync");
@@ -202,4 +211,84 @@ public class NotificationService {
         }
     }
 
+    private StoredNotification loadNotification(String id) {
+        if (notificationRepository != null) {
+            return notificationRepository.findById(id).orElse(null);
+        }
+        return notifications.get(id);
+    }
+
+    private List<StoredNotification> loadAllNotifications() {
+        if (notificationRepository != null) {
+            return notificationRepository.findAll();
+        }
+        return notifications.values().stream().toList();
+    }
+
+    private void saveNotification(StoredNotification notification) {
+        if (notificationRepository != null) {
+            if (notificationRepository.findById(notification.id()).isPresent()) {
+                notificationRepository.update(notification);
+            } else {
+                notificationRepository.save(notification);
+            }
+            return;
+        }
+        notifications.put(notification.id(), notification);
+    }
+
+    private void updateStoredStatus(String id, String status) {
+        StoredNotification notification = loadNotification(id);
+        if (notification == null) {
+            return;
+        }
+
+        StoredNotification updated = new StoredNotification(
+                notification.id(),
+                notification.sourceSystem(),
+                notification.correlationId(),
+                notification.notificationType(),
+                notification.severity(),
+                notification.priority(),
+                notification.recipients(),
+                notification.channels(),
+                notification.createdAt(),
+                notification.scheduledAt(),
+                notification.expiresAt(),
+                notification.title(),
+                notification.message(),
+                status,
+                notification.deliveryAttempts(),
+                notification.receivedAt());
+        saveNotification(updated);
+    }
+
+    private void addStoredAttempt(String id, DeliveryAttemptResponse attempt) {
+        StoredNotification notification = loadNotification(id);
+        if (notification == null) {
+            return;
+        }
+
+        List<DeliveryAttemptResponse> attempts = new ArrayList<>(notification.deliveryAttempts());
+        attempts.add(attempt);
+
+        StoredNotification updated = new StoredNotification(
+                notification.id(),
+                notification.sourceSystem(),
+                notification.correlationId(),
+                notification.notificationType(),
+                notification.severity(),
+                notification.priority(),
+                notification.recipients(),
+                notification.channels(),
+                notification.createdAt(),
+                notification.scheduledAt(),
+                notification.expiresAt(),
+                notification.title(),
+                notification.message(),
+                notification.status(),
+                attempts,
+                notification.receivedAt());
+        saveNotification(updated);
+    }
 }

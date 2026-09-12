@@ -16,7 +16,7 @@ import static com.schwab.nms.util.NmsUtils.normalizeList;
 public class RequestValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestValidator.class);
     public void createNotifyValidateRequest(NotificationRequest request) {
-        LOGGER.info("Enter: createNotifyValidateRequest");
+        LOGGER.debug("Enter: createNotifyValidateRequest");
         try {
             if (StringUtils.isBlank(request.sourceSystem())) {
                 throw new IllegalArgumentException(NmsConstants.Messages.ERR_SOURCE_SYSTEM);
@@ -50,7 +50,7 @@ public class RequestValidator {
             NotificationPriority.fromValue(request.priority());
             NotificationSeverity.fromValue(request.severity());
             NotificationType.fromValue(request.notificationType());
-            LOGGER.info("Exit: createNotifyValidateRequest");
+            LOGGER.debug("Exit: createNotifyValidateRequest");
         } catch (Exception e) {
             LOGGER.error("Error in createNotifyValidateRequest", e);
             throw e;

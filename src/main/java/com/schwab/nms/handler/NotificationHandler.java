@@ -18,10 +18,10 @@ public class NotificationHandler {
     private final NotificationService notificationService;
 
     public NotificationHandler(NotificationService notificationService) {
-        LOGGER.info("Enter: NotificationHandler constructor");
+        LOGGER.debug("Enter: NotificationHandler constructor");
         try {
             this.notificationService = notificationService;
-            LOGGER.info("Exit: NotificationHandler constructor");
+            LOGGER.debug("Exit: NotificationHandler constructor");
         } catch (Exception e) {
             LOGGER.error("Error in NotificationHandler constructor", e);
             throw e;
@@ -41,10 +41,10 @@ public class NotificationHandler {
     }
 
     public NotificationResponse getNotificationById(String id) {
-        LOGGER.info("Enter: getNotificationById (handler)");
+        LOGGER.debug("Enter: getNotificationById (handler)");
         try {
             NotificationResponse result = notificationService.getNotificationById(id);
-            LOGGER.info("Exit: getNotificationById (handler)");
+            LOGGER.debug("Exit: getNotificationById (handler)");
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in getNotificationById (handler)", e);
@@ -53,10 +53,10 @@ public class NotificationHandler {
     }
 
     public NotificationStatusResponse getNotificationStatus(String id) {
-        LOGGER.info("Enter: getNotificationStatus (handler)");
+        LOGGER.debug("Enter: getNotificationStatus (handler)");
         try {
             NotificationStatusResponse result = notificationService.getNotificationStatus(id);
-            LOGGER.info("Exit: getNotificationStatus (handler)");
+            LOGGER.debug("Exit: getNotificationStatus (handler)");
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in getNotificationStatus (handler)", e);
@@ -65,10 +65,10 @@ public class NotificationHandler {
     }
 
     public List<NotificationResponse> getNotifications() {
-        LOGGER.info("Enter: getNotifications (handler)");
+        LOGGER.debug("Enter: getNotifications (handler)");
         try {
             List<NotificationResponse> result = notificationService.getNotifications();
-            LOGGER.info("Exit: getNotifications (handler)");
+            LOGGER.debug("Exit: getNotifications (handler)");
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in getNotifications (handler)", e);

@@ -15,7 +15,7 @@ public class NotificationRoutingPolicy {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationRoutingPolicy.class);
 
     public List<String> resolveChannels(List<String> requestedChannels, String priority) {
-        LOGGER.info("Enter: resolveChannels");
+        LOGGER.debug("Enter: resolveChannels");
         try {
             NotificationPriority parsedPriority = NotificationPriority.fromValue(priority);
 
