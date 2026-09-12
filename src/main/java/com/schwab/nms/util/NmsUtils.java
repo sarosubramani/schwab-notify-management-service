@@ -20,13 +20,13 @@ public final class NmsUtils {
     public static List<String> normalizeList(List<String> items) {
         try {
             if (items == null || items.isEmpty()) {
-            return List.of();
+                return List.of();
             }
             List<String> normalized = new ArrayList<>();
             for (String it : items) {
                 if (StringUtils.isNotBlank(it)) {
                     String trimmed = it.trim();
-                    if (!normalized.contains(trimmed)) {
+                    if (normalized.stream().noneMatch(existing -> existing.equalsIgnoreCase(trimmed))) {
                         normalized.add(trimmed);
                     }
                 }
