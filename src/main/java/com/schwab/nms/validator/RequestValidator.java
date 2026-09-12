@@ -21,9 +21,6 @@ public class RequestValidator {
             if (StringUtils.isBlank(request.sourceSystem())) {
                 throw new IllegalArgumentException(NmsConstants.Messages.ERR_SOURCE_SYSTEM);
             }
-            if (StringUtils.isBlank(request.correlationId())) {
-                throw new IllegalArgumentException(NmsConstants.Messages.ERR_CORRELATION_ID);
-            }
             if (StringUtils.isBlank(request.notificationType())) {
                 throw new IllegalArgumentException(NmsConstants.Messages.ERR_NOTIFICATION_TYPE);
             }

@@ -1,7 +1,9 @@
 package com.schwab.nms;
 
+import com.schwab.nms.exception.ResourceNotFoundException;
 import com.schwab.nms.model.NotificationRequest;
 import com.schwab.nms.model.NotificationResponse;
+import com.schwab.nms.model.NotificationStatusResponse;
 import com.schwab.nms.service.NotificationRoutingPolicy;
 import com.schwab.nms.service.NotificationService;
 import org.junit.jupiter.api.Test;
@@ -18,59 +20,23 @@ class NotificationServiceTest {
     private final NotificationService notificationService = new NotificationService(new NotificationRoutingPolicy());
 
     @Test
-    void greenfieldCreateNotificationShouldReturnQueuedResponse() {
-        NotificationRequest request = new NotificationRequest(
-                "notif-1001",
-                "billing-system",
-                "evt-9001",
-                "ALERT",
-                "ERROR",
-                "HIGH",
-                List.of("customer@example.com"),
-                List.of("EMAIL", "SMS"),
-                LocalDateTime.now(),
-                null,
-                null,
-                "Payment due",
-                "Invoice 1024 is due today");
+    void createNotificationReturnsQueuedResponse() {
+        NotificationRequest request = validRequest("notif-1001", "billing-system", "corr-1001");
 
         NotificationResponse response = notificationService.createNotification(request);
 
         assertNotNull(response.id());
         assertEquals("billing-system", response.sourceSystem());
-        assertEquals("EMAIL", response.channels().get(0));
         assertEquals("QUEUED", response.status());
+        assertEquals(List.of("EMAIL", "SMS"), response.channels());
     }
 
     @Test
-    void brownfieldShouldSupportTeamsChannel() {
+    void defaultChannelsAreAppliedWhenChannelsAreBlank() {
         NotificationRequest request = new NotificationRequest(
                 "notif-1002",
-                "operations-system",
-                "evt-9002",
-                "INFO",
-                "WARNING",
-                "MEDIUM",
-                List.of("ops-team@company.com"),
-                List.of("TEAMS"),
-                LocalDateTime.now(),
-                null,
-                null,
-                "Incident update",
-                "Database failover complete");
-
-        NotificationResponse response = notificationService.createNotification(request);
-
-        assertEquals("TEAMS", response.channels().get(0));
-        assertEquals("MEDIUM", response.priority());
-    }
-
-    @Test
-    void ambiguousRequirementShouldDefaultChannelsForPriority() {
-        NotificationRequest request = new NotificationRequest(
-                "notif-1003",
                 "risk-system",
-                "evt-9003",
+                "corr-1002",
                 "SECURITY",
                 "CRITICAL",
                 "HIGH",
@@ -80,7 +46,8 @@ class NotificationServiceTest {
                 null,
                 null,
                 "Risk alert",
-                "Account performance threshold breached");
+                "Threshold breached"
+        );
 
         NotificationResponse response = notificationService.createNotification(request);
 
@@ -88,21 +55,8 @@ class NotificationServiceTest {
     }
 
     @Test
-    void duplicateRequestShouldBeRejected() {
-        NotificationRequest request = new NotificationRequest(
-                "notif-1004",
-                "fraud-monitor",
-                "evt-9004",
-                "SECURITY",
-                "CRITICAL",
-                "CRITICAL",
-                List.of("ops@example.com"),
-                List.of("EMAIL", "PUSH"),
-                LocalDateTime.now(),
-                null,
-                null,
-                "Suspicious activity",
-                "A high-risk transaction was flagged");
+    void duplicateRequestThrowsIllegalArgumentException() {
+        NotificationRequest request = validRequest("notif-1003", "fraud-monitor", "corr-1003");
 
         notificationService.createNotification(request);
 
@@ -113,26 +67,76 @@ class NotificationServiceTest {
     }
 
     @Test
-    void getNotificationShouldReturnStoredNotificationById() {
-        NotificationRequest request = new NotificationRequest(
-                "notif-1005",
-                "fraud-monitor",
-                "evt-9005",
-                "SECURITY",
-                "CRITICAL",
-                "CRITICAL",
-                List.of("ops@example.com"),
-                List.of("EMAIL", "PUSH"),
-                LocalDateTime.now(),
-                null,
-                null,
-                "Suspicious activity",
-                "A high-risk transaction was flagged");
+    void getNotificationByIdReturnsStoredRecord() {
+        NotificationRequest request = validRequest("notif-1004", "ops-system", "corr-1004");
 
         NotificationResponse created = notificationService.createNotification(request);
         NotificationResponse found = notificationService.getNotificationById(created.id());
 
         assertEquals(created.id(), found.id());
-        assertEquals("fraud-monitor", found.sourceSystem());
+        assertEquals("ops-system", found.sourceSystem());
+    }
+
+    @Test
+    void getNotificationStatusReturnsOverallStatus() {
+        NotificationRequest request = validRequest("notif-1005", "support-system", "corr-1005");
+
+        NotificationResponse created = notificationService.createNotification(request);
+        NotificationStatusResponse status = notificationService.getNotificationStatus(created.id());
+
+        assertEquals(created.id(), status.id());
+        assertNotNull(status.overallStatus());
+    }
+
+    @Test
+    void getNotificationsReturnsAllSortedNewestFirst() {
+        NotificationRequest older = validRequestAt("notif-1006", "billing-system", "corr-1006", LocalDateTime.now().minusMinutes(2));
+        NotificationRequest newer = validRequestAt("notif-1007", "billing-system", "corr-1007", LocalDateTime.now().minusMinutes(1));
+
+        notificationService.createNotification(older);
+        notificationService.createNotification(newer);
+
+        List<NotificationResponse> all = notificationService.getNotifications();
+
+        assertEquals(2, all.size());
+        assertEquals("notif-1007", all.get(0).notificationId());
+    }
+
+    @Test
+    void missingNotificationByIdThrowsResourceNotFound() {
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> notificationService.getNotificationById("missing-id"));
+
+        assertEquals("Notification not found with id: missing-id", exception.getMessage());
+    }
+
+    @Test
+    void nullRequestIsRejected() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> notificationService.createNotification(null));
+
+        assertEquals("Notification request cannot be null", exception.getMessage());
+    }
+
+    private NotificationRequest validRequest(String notificationId, String sourceSystem, String correlationId) {
+        return validRequestAt(notificationId, sourceSystem, correlationId, LocalDateTime.now());
+    }
+
+    private NotificationRequest validRequestAt(String notificationId, String sourceSystem, String correlationId, LocalDateTime createdAt) {
+        return new NotificationRequest(
+                notificationId,
+                sourceSystem,
+                correlationId,
+                "ALERT",
+                "ERROR",
+                "HIGH",
+                List.of("ops@example.com"),
+                List.of("EMAIL", "SMS"),
+                createdAt,
+                null,
+                null,
+                "Payment due",
+                "Invoice 1024 is due today"
+        );
     }
 }

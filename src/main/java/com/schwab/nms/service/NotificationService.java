@@ -68,7 +68,7 @@ public class NotificationService {
             StoredNotification notification = new StoredNotification(
                     id,
                     request.sourceSystem(),
-                    request.correlationId(),
+                    StringUtils.isBlank(request.correlationId()) ? UUID.randomUUID().toString() : request.correlationId(),
                     notificationType.name(),
                     severity.name(),
                     priority.name(),
