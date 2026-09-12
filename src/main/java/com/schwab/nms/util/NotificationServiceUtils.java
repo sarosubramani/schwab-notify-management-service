@@ -5,6 +5,7 @@ import com.schwab.nms.enums.NotificationChannel;
 import com.schwab.nms.model.DeliveryAttemptResponse;
 import com.schwab.nms.model.NotificationRequest;
 import com.schwab.nms.model.NotificationResponse;
+import com.schwab.nms.model.NotificationStatusResponse;
 import com.schwab.nms.model.StoredNotification;
 import com.schwab.nms.service.NotificationRoutingPolicy;
 import org.slf4j.Logger;
@@ -143,6 +144,34 @@ public final class NotificationServiceUtils {
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in toResponse", e);
+            throw e;
+        }
+    }
+
+    public static NotificationStatusResponse toStatusResponse(StoredNotification notification) {
+        LOGGER.info("Enter: toStatusResponse");
+        try {
+            List<NotificationStatusResponse.RecipientDeliveryStatus> recipientStatus = notification.recipients().stream()
+                    .map(recipient -> new NotificationStatusResponse.RecipientDeliveryStatus(
+                            recipient,
+                            notification.channels().isEmpty() ? "N/A" : notification.channels().getFirst(),
+                            notification.status()))
+                    .toList();
+
+            NotificationStatusResponse result = new NotificationStatusResponse(
+                    notification.id(),
+                    notification.id(),
+                    notification.status(),
+                    notification.channels(),
+                    recipientStatus,
+                    notification.createdAt(),
+                    notification.scheduledAt(),
+                    notification.expiresAt(),
+                    notification.receivedAt());
+            LOGGER.info("Exit: toStatusResponse");
+            return result;
+        } catch (Exception e) {
+            LOGGER.error("Error in toStatusResponse", e);
             throw e;
         }
     }

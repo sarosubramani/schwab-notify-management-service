@@ -4,6 +4,11 @@ import com.schwab.nms.model.NotificationRequest;
 import com.schwab.nms.model.NotificationResponse;
 import com.schwab.nms.model.NotificationStatusResponse;
 import com.schwab.nms.handler.NotificationHandler;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +42,15 @@ public class NotificationController {
         }
     }
 
+    @Operation(
+            summary = "Create a notification",
+            description = "Creates a new notification and returns the stored notification payload.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Notification created successfully",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = NotificationResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/notifications")
     public ResponseEntity<NotificationResponse> createNotification(@Valid @RequestBody NotificationRequest request) {
         LOGGER.info("Enter: createNotification (controller)");
@@ -50,7 +64,15 @@ public class NotificationController {
         }
     }
 
-    @GetMapping("/notifications")
+    @Operation(
+            summary = "Get all notifications",
+            description = "Retrieves all notifications currently tracked by the service.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = NotificationResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/getnotifications")
     public ResponseEntity<List<NotificationResponse>> getNotifications() {
         LOGGER.info("Enter: getNotifications (controller)");
         try {
@@ -63,6 +85,15 @@ public class NotificationController {
         }
     }
 
+    @Operation(
+            summary = "Get notification by ID",
+            description = "Fetches an individual notification using its unique notification ID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Notification found",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = NotificationResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Notification not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @GetMapping("/notifications/{id}")
     public ResponseEntity<NotificationResponse> getNotificationById(@PathVariable String id) {
         LOGGER.info("Enter: getNotificationById (controller)");
@@ -76,6 +107,15 @@ public class NotificationController {
         }
     }
 
+    @Operation(
+            summary = "Get notification status by ID",
+            description = "Returns the current delivery status for an individual notification.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Notification status retrieved successfully",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = NotificationStatusResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Notification not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @GetMapping("/notifications/{id}/status")
     public ResponseEntity<NotificationStatusResponse> getNotificationStatus(@PathVariable String id) {
         LOGGER.info("Enter: getNotificationStatus (controller)");

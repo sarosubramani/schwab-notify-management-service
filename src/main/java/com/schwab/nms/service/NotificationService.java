@@ -40,13 +40,13 @@ public class NotificationService {
     private final Map<String, StoredNotification> notifications = new ConcurrentHashMap<>();
     private final NotificationRoutingPolicy routingPolicy;
 
+    private final RequestValidator requestValidator;
+
     @Autowired
     public NotificationService(NotificationRoutingPolicy routingPolicy) {
             this.routingPolicy = routingPolicy;
+            this.requestValidator = new RequestValidator();
     }
-
-    @Autowired
-    public RequestValidator requestValidator;;
 
     public NotificationResponse createNotification(NotificationRequest request) {
         LOGGER.info("Enter: createNotification");
@@ -96,12 +96,12 @@ public class NotificationService {
     public NotificationResponse getNotificationById(String id) {
         LOGGER.info("Enter: getNotificationById");
         try {
-            if (StringUtils.isNotBlank(id)) {
+            if (StringUtils.isBlank(id)) {
                 throw new ResourceNotFoundException("Notification", "id", id);
             }
 
             StoredNotification notification = notifications.get(id);
-            if (ObjectUtils.isNotEmpty(notification)) {
+            if (null == notification) {
                 throw new ResourceNotFoundException("Notification", "id", id);
             }
 
@@ -109,6 +109,26 @@ public class NotificationService {
             return NotificationServiceUtils.toResponse(notification);
         } catch (Exception e) {
             LOGGER.error("Error in getNotificationById", e);
+            throw e;
+        }
+    }
+
+    public NotificationStatusResponse getNotificationStatus(String id) {
+        LOGGER.info("Enter: getNotificationStatus");
+        try {
+            if (StringUtils.isBlank(id)) {
+                throw new ResourceNotFoundException("Notification", "id", id);
+            }
+
+            StoredNotification notification = notifications.get(id);
+            if (null == notification) {
+                throw new ResourceNotFoundException("Notification", "id", id);
+            }
+
+            LOGGER.info("Exit: getNotificationStatus");
+            return NotificationServiceUtils.toStatusResponse(notification);
+        } catch (Exception e) {
+            LOGGER.error("Error in getNotificationStatus", e);
             throw e;
         }
     }
@@ -124,43 +144,6 @@ public class NotificationService {
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in getNotifications", e);
-            throw e;
-        }
-    }
-
-    public NotificationStatusResponse getNotificationStatus(String id) {
-        LOGGER.info("Enter: getNotificationStatus");
-        try {
-            NotificationResponse response = getNotificationById(id);
-            StoredNotification notification = notifications.get(id);
-            List<NotificationStatusResponse.RecipientDeliveryStatus> recipientStatuses = new ArrayList<>();
-
-            for (String recipient : notification.recipients()) {
-                for (String channel : notification.channels()) {
-                    String status = notification.deliveryAttempts().stream()
-                            .filter(attempt -> attempt.channel().equalsIgnoreCase(channel))
-                            .map(DeliveryAttemptResponse::status)
-                            .reduce((first, second) -> second)
-                            .orElse(NmsConstants.Messages.DEFAULT_PENDING);
-
-                    recipientStatuses.add(new NotificationStatusResponse.RecipientDeliveryStatus(recipient, channel, status));
-                }
-            }
-
-            NotificationStatusResponse result = new NotificationStatusResponse(
-                    notification.id(),
-                    notification.id(),
-                    response.status(),
-                    notification.channels(),
-                    recipientStatuses,
-                    notification.createdAt(),
-                    notification.scheduledAt(),
-                    notification.expiresAt(),
-                    LocalDateTime.now());
-            LOGGER.info("Exit: getNotificationStatus");
-            return result;
-        } catch (Exception e) {
-            LOGGER.error("Error in getNotificationStatus", e);
             throw e;
         }
     }

@@ -52,18 +52,6 @@ public class NotificationHandler {
         }
     }
 
-    public List<NotificationResponse> getNotifications() {
-        LOGGER.info("Enter: getNotifications (handler)");
-        try {
-            List<NotificationResponse> result = notificationService.getNotifications();
-            LOGGER.info("Exit: getNotifications (handler)");
-            return result;
-        } catch (Exception e) {
-            LOGGER.error("Error in getNotifications (handler)", e);
-            throw e;
-        }
-    }
-
     public NotificationStatusResponse getNotificationStatus(String id) {
         LOGGER.info("Enter: getNotificationStatus (handler)");
         try {
@@ -72,6 +60,18 @@ public class NotificationHandler {
             return result;
         } catch (Exception e) {
             LOGGER.error("Error in getNotificationStatus (handler)", e);
+            throw e;
+        }
+    }
+
+    public List<NotificationResponse> getNotifications() {
+        LOGGER.info("Enter: getNotifications (handler)");
+        try {
+            List<NotificationResponse> result = notificationService.getNotifications();
+            LOGGER.info("Exit: getNotifications (handler)");
+            return result;
+        } catch (Exception e) {
+            LOGGER.error("Error in getNotifications (handler)", e);
             throw e;
         }
     }
