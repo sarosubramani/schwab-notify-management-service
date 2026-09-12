@@ -1,5 +1,7 @@
 package com.schwab.nms.enums;
 
+import org.apache.commons.lang3.StringUtils;
+
 public enum NotificationSeverity {
     INFO,
     WARNING,
@@ -7,7 +9,7 @@ public enum NotificationSeverity {
     CRITICAL;
 
     public static NotificationSeverity fromValue(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
+        if (StringUtils.isEmpty(rawValue)) {
             throw new IllegalArgumentException("Notification severity cannot be blank");
         }
 

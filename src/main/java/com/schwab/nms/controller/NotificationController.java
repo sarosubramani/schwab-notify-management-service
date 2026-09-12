@@ -38,8 +38,8 @@ public class NotificationController {
     }
 
     @GetMapping("/notifications/{id}")
-    public ResponseEntity<NotificationResponse> getNotification(@PathVariable String id) {
-        return ResponseEntity.ok(notificationHandler.getNotification(id));
+    public ResponseEntity<NotificationResponse> getNotificationById(@PathVariable String id) {
+        return ResponseEntity.ok(notificationHandler.getNotificationById(id));
     }
 
     @GetMapping("/notifications/{id}/status")

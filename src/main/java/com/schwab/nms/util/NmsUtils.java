@@ -3,6 +3,7 @@ package com.schwab.nms.util;
 import com.schwab.nms.model.NotificationRequest;
 import com.schwab.nms.model.StoredNotification;
 import com.schwab.nms.service.NotificationRoutingPolicy;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +19,7 @@ public final class NmsUtils {
         }
         List<String> normalized = new ArrayList<>();
         for (String it : items) {
-            if (it != null && !it.isBlank()) {
+            if (StringUtils.isNotBlank(it)) {
                 String trimmed = it.trim();
                 if (!normalized.contains(trimmed)) {
                     normalized.add(trimmed);

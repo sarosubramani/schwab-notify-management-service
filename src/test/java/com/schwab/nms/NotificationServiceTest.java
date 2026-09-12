@@ -113,7 +113,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void getNotificationShouldReturnStoredNotification() {
+    void getNotificationShouldReturnStoredNotificationById() {
         NotificationRequest request = new NotificationRequest(
                 "notif-1005",
                 "fraud-monitor",
@@ -130,7 +130,7 @@ class NotificationServiceTest {
                 "A high-risk transaction was flagged");
 
         NotificationResponse created = notificationService.createNotification(request);
-        NotificationResponse found = notificationService.getNotification(created.id());
+        NotificationResponse found = notificationService.getNotificationById(created.id());
 
         assertEquals(created.id(), found.id());
         assertEquals("fraud-monitor", found.sourceSystem());

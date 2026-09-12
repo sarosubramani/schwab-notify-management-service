@@ -21,8 +21,8 @@ public class NotificationHandler {
         return notificationService.createNotification(request);
     }
 
-    public NotificationResponse getNotification(String id) {
-        return notificationService.getNotification(id);
+    public NotificationResponse getNotificationById(String id) {
+        return notificationService.getNotificationById(id);
     }
 
     public List<NotificationResponse> getNotifications() {

@@ -1,5 +1,7 @@
 package com.schwab.nms.enums;
 
+import org.apache.commons.lang3.StringUtils;
+
 public enum NotificationPriority {
     LOW,
     MEDIUM,
@@ -7,7 +9,7 @@ public enum NotificationPriority {
     CRITICAL;
 
     public static NotificationPriority fromValue(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
+        if (StringUtils.isBlank(rawValue)) {
             throw new IllegalArgumentException("Notification priority cannot be blank");
         }
 

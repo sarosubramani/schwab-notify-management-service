@@ -12,9 +12,12 @@ import com.schwab.nms.enums.NotificationSeverity;
 import com.schwab.nms.enums.NotificationStatus;
 import com.schwab.nms.enums.NotificationType;
 import com.schwab.nms.exception.ResourceNotFoundException;
+import com.schwab.nms.validator.RequestValidator;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,6 +27,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.schwab.nms.util.NmsUtils.normalizeList;
 
 @Service
 public class NotificationService {
@@ -36,22 +41,23 @@ public class NotificationService {
         this.routingPolicy = routingPolicy;
     }
 
+    @Autowired
+    public RequestValidator requestValidator;;
+
     public NotificationResponse createNotification(NotificationRequest request) {
         if (request == null) {
             throw new IllegalArgumentException(NmsConstants.Messages.ERR_REQUEST_NULL);
         }
 
-        validateRequest(request);
+        requestValidator.createNotifyValidateRequest(request);
         ensureNotDuplicate(request);
 
-        List<String> channels = routingPolicy.resolveChannels(com.schwab.nms.util.NmsUtils.normalizeList(request.channels()), request.priority());
-        List<String> recipients = com.schwab.nms.util.NmsUtils.normalizeList(request.recipients());
+        List<String> channels = routingPolicy.resolveChannels(normalizeList(request.channels()), request.priority());
+        List<String> recipients = normalizeList(request.recipients());
         NotificationPriority priority = NotificationPriority.fromValue(request.priority());
         NotificationSeverity severity = NotificationSeverity.fromValue(request.severity());
         NotificationType notificationType = NotificationType.fromValue(request.notificationType());
-        String id = request.notificationId() == null || request.notificationId().isBlank()
-                ? UUID.randomUUID().toString()
-                : request.notificationId();
+        String id = StringUtils.isBlank(request.notificationId()) ? UUID.randomUUID().toString() : request.notificationId();
 
         StoredNotification notification = new StoredNotification(
                 id,
@@ -76,13 +82,13 @@ public class NotificationService {
         return toResponse(notification);
     }
 
-    public NotificationResponse getNotification(String id) {
-        if (id == null || id.isBlank()) {
+    public NotificationResponse getNotificationById(String id) {
+        if (StringUtils.isNotBlank(id)) {
             throw new ResourceNotFoundException("Notification", "id", id);
         }
 
         StoredNotification notification = notifications.get(id);
-        if (notification == null) {
+        if (ObjectUtils.isNotEmpty(notification)) {
             throw new ResourceNotFoundException("Notification", "id", id);
         }
 
@@ -97,7 +103,7 @@ public class NotificationService {
     }
 
     public NotificationStatusResponse getNotificationStatus(String id) {
-        NotificationResponse response = getNotification(id);
+        NotificationResponse response = getNotificationById(id);
         StoredNotification notification = notifications.get(id);
         List<NotificationStatusResponse.RecipientDeliveryStatus> recipientStatuses = new ArrayList<>();
 
@@ -143,7 +149,7 @@ public class NotificationService {
                 String provider = resolveProvider(channel);
                 DeliveryAttemptResponse attempt = new DeliveryAttemptResponse(
                         channel,
-                                                notification.deliveryAttempts().size() + 1,
+                        notification.deliveryAttempts().size() + 1,
                         NotificationStatus.SENT.name(),
                         provider,
                         NmsConstants.Messages.ATTEMPT_DELIVERED);
@@ -230,42 +236,7 @@ public class NotificationService {
         };
     }
 
-    private void validateRequest(NotificationRequest request) {
-        if (request.sourceSystem() == null || request.sourceSystem().isBlank()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_SOURCE_SYSTEM);
-        }
-        if (request.correlationId() == null || request.correlationId().isBlank()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_CORRELATION_ID);
-        }
-        if (request.notificationType() == null || request.notificationType().isBlank()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_NOTIFICATION_TYPE);
-        }
-        if (request.severity() == null || request.severity().isBlank()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_SEVERITY);
-        }
-        if (request.priority() == null || request.priority().isBlank()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_PRIORITY);
-        }
-        if (com.schwab.nms.util.NmsUtils.normalizeList(request.recipients()).isEmpty()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_RECIPIENTS);
-        }
-        if (request.createdAt() == null) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_CREATED_AT);
-        }
-        if (request.title() == null || request.title().isBlank()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_TITLE);
-        }
-        if (request.message() == null || request.message().isBlank()) {
-            throw new IllegalArgumentException(NmsConstants.Messages.ERR_MESSAGE);
-        }
 
-        for (String channel : com.schwab.nms.util.NmsUtils.normalizeList(request.channels())) {
-            NotificationChannel.fromValue(channel);
-        }
-        NotificationPriority.fromValue(request.priority());
-        NotificationSeverity.fromValue(request.severity());
-        NotificationType.fromValue(request.notificationType());
-    }
 
     private void ensureNotDuplicate(NotificationRequest request) {
         String fingerprint = com.schwab.nms.util.NmsUtils.buildFingerprint(request, routingPolicy);

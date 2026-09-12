@@ -1,5 +1,7 @@
 package com.schwab.nms.enums;
 
+import org.apache.commons.lang3.StringUtils;
+
 public enum NotificationType {
     ALERT,
     INFO,
@@ -8,7 +10,7 @@ public enum NotificationType {
     SECURITY;
 
     public static NotificationType fromValue(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
+        if (StringUtils.isEmpty(rawValue)) {
             throw new IllegalArgumentException("Notification type cannot be blank");
         }
 

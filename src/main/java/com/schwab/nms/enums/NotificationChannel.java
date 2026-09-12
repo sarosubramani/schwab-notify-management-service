@@ -1,5 +1,7 @@
 package com.schwab.nms.enums;
 
+import org.apache.commons.lang3.StringUtils;
+
 public enum NotificationChannel {
     EMAIL,
     SMS,
@@ -7,8 +9,9 @@ public enum NotificationChannel {
     IN_APP,
     SLACK,
     TEAMS;
+
     public static NotificationChannel fromValue(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
+        if (StringUtils.isBlank(rawValue)) {
             throw new IllegalArgumentException("Notification channel cannot be blank");
         }
 
