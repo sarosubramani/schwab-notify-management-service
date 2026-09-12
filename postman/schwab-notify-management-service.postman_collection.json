@@ -1,0 +1,154 @@
+{
+  "info": {
+    "name": "Schwab Notification Management Service API",
+    "description": "Postman collection for the Notification Management Service. Update the baseUrl variable if your app runs on a different port.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "1278d9a2-2834-4a64-9f0d-26bc8d5ea0f7"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "notif-001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Notification",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"notificationId\": \"notif-001\",\n  \"sourceSystem\": \"OPS\",\n  \"correlationId\": \"corr-1001\",\n  \"notificationType\": \"ALERT\",\n  \"severity\": \"ERROR\",\n  \"priority\": \"HIGH\",\n  \"recipients\": [\"user1@example.com\", \"user2@example.com\"],\n  \"channels\": [\"EMAIL\", \"SMS\"],\n  \"createdAt\": \"2026-09-12T13:30:00\",\n  \"scheduledAt\": \"2026-09-12T13:35:00\",\n  \"expiresAt\": \"2026-09-12T14:00:00\",\n  \"title\": \"System outage alert\",\n  \"message\": \"The payment service is intermittently failing. Investigate immediately.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/notifications",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "notifications"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res && res.notificationId) {",
+              "  pm.collectionVariables.set('notificationId', res.notificationId);",
+              "}\n",
+              "if (res && res.id) {",
+              "  pm.collectionVariables.set('notificationId', res.id);",
+              "}",
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Get All Notifications",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/getnotifications",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "getnotifications"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Notification By ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "notifications",
+            "{{notificationId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Notification Status By ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "notifications",
+            "{{notificationId}}",
+            "status"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

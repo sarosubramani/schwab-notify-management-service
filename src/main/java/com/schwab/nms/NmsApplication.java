@@ -12,15 +12,8 @@ public class NmsApplication {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NmsApplication.class);
 
-	public static void main(String[] args) {
-        LOGGER.info("Enter: main");
-        try {
-            SpringApplication.run(NmsApplication.class, args);
-            LOGGER.info("Exit: main");
-        } catch (Exception e) {
-            LOGGER.error("Error in main", e);
-            throw e;
-        }
+    public static void main(String[] args) {
+        SpringApplication.run(NmsApplication.class, args);
     }
 
 }
